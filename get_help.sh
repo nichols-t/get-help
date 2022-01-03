@@ -1,9 +1,19 @@
 #!/usr/bin/env bash
 
-# CONFIGURATION
+################## CONFIGURATION ###################
+# Thresholds
 MEM_THRESHOLD=10
 CPU_THRESHOLD=30
 DISK_THRESHOLD=90
+# Controls whether to print out debugging statements
+DEBUG=true
+# Path to the files containing the help messages
+MSG_PATH=./etc/get_help
+# Maximum wait time (ms) in-betwen log messages
+# Make sure MAXWAIT*TIER3_COUNT is shorter than the
+# interval
+MAXWAIT=2000
+############## END CONFIGURATION ###################
 
 # Store 1 if the usage is high, store 0 otherwise
 MEM_HIGH=0
@@ -28,10 +38,15 @@ function disk_usage() {
     echo $disk
 }
 
-function just_echo () {
-    echo "I am just testing output"
+# Call this with an output line to send it wherever
+# quality outputs are sold
+function outputs() {
+    wall "$1"
+    logger "$1"
+    echo "$1"
 }
 
+# Get usages and set the "high-or-not" booleans as appropriate
 disk=$(disk_usage)
 cpu=$(cpu_usage)
 mem=$(mem_usage)
@@ -52,26 +67,32 @@ USAGE_TIER=$(( MEM_HIGH + CPU_HIGH + DISK_HIGH ))
 STATUS_PREFIX="HELP TIER:"
 
 # This will be logged as the tier of help we are about to get
-if (( USAGE_TIER > 2 )); then
-    echo "$STATUS_PREFIX I need a lot of help"
-elif (( USAGE_TIER > 1 )); then
-    echo "$STATUS_PREFIX I need some help"
-elif (( USAGE_TIER > 0 )); then
-    echo "$STATUS_PREFIX I need a bit of help"
-else
-    echo "$STATUS_PREFIX I don't need help"
+if [ $DEBUG = true ]; then
+    if (( USAGE_TIER > 2 )); then
+        echo "$STATUS_PREFIX I need a lot of help"
+    elif (( USAGE_TIER > 1 )); then
+        echo "$STATUS_PREFIX I need some help"
+    elif (( USAGE_TIER > 0 )); then
+        echo "$STATUS_PREFIX I need a bit of help"
+    else
+        echo "$STATUS_PREFIX I don't need help"
+    fi
 fi
 
 NUM_MSGS=$(( 10 * USAGE_TIER^2 ))
-echo "I will send $NUM_MSGS messages"
+
+if [ $DEBUG = true ]; then
+    echo "I will send $NUM_MSGS messages"
+fi
 
 for ((i=0; i< NUM_MSGS; i ++ )); do
-    line=$(shuf -n 1 tier2.txt)
-    wall "$stuff"
-done
+    wait_ms=$((RANDOM % MAXWAIT))
 
-# todo: behavior should be:
-# 1. Check all the system thresholds
-# 2. Choose 'tier' of message based on how many thresholds are exceeded
-# 3. Select and wall random message from tier
-# 4. Look into printing the message to log files as well
+    if [ $DEBUG = true ]; then
+        echo "Waiting for $wait_ms before sending message"
+    fi
+
+    sleep "0.$wait_ms"
+    line=$(shuf -n 1 "$MSG_PATH/tier$USAGE_TIER.txt")
+    outputs "$line"
+done

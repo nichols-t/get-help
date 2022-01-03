@@ -6,7 +6,8 @@ WARNING: not done yet
 # todo
 - make a service script to automatically run this every so often
   - should have /etc/config for that when its done
-- get way to write to fd of other processes; not sure how to do that properly
+- write more messages
+  - a couple orders of magnitude more would be neat
 
 # prerequisites
 This is meant to run on linux systems. There are probably other prerequisites which I will
